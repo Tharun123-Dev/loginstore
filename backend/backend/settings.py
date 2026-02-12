@@ -58,6 +58,14 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'backend.urls'
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
+CORS_ALLOW_CREDENTIALS = True
+
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = False
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -87,7 +95,7 @@ load_dotenv()
 
 DATABASES = {
   'default': {
-    'ENGINE': 'mysql.connector.django',
+    'ENGINE': 'django.db.backends.mysql',
     'NAME': os.getenv('DB_NAME'),
     'USER': os.getenv('DB_USER'),
     'PASSWORD': os.getenv('DB_PASSWORD'),

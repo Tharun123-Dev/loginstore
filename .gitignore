@@ -8,10 +8,12 @@
 # =========================
 # Virtual Environment
 # =========================
-venv/
+nani/
 env/
 ENV/
-.venv/
+.nani/
+./nani
+../nani
 
 # =========================
 # Environment Variables
