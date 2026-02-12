@@ -7,6 +7,12 @@ const Navbar = () => {
       <div className="nav-links">
         <Link to="/profile">Profile</Link>
         <Link to="/login">Login</Link>
+        <button 
+      onClick={() => window.location.href = "http://localhost:8000/admin/"} 
+      style={styles.navBtn}
+    >
+      Admin Panel
+    </button>
       </div>
     </div>
   );

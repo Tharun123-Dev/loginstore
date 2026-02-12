@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import { useNavigate } from "react-router-dom";
+import Navbar from "../Components/navbar";
 
 const Profile = () => {
 
@@ -35,12 +36,16 @@ const Profile = () => {
   };
 
   return (
+    
     <div style={styles.page}>
       <div style={styles.container}>
         <div style={styles.card}>
+   
+
 
           {user ? (
             <>
+             {/* <Navbar/> */}
               <h2>Welcome, {user.username} 👋</h2>
               <h2>Here, This is for u Isrtc Booking:</h2>
               <p><b>Email:</b> {user.email}</p>
