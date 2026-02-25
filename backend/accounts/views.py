@@ -1,17 +1,19 @@
 from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.decorators import login_required
-import json
-
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from django.contrib.auth.models import User
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.contrib.auth import authenticate, logout
+from rest_framework_simplejwt.tokens import RefreshToken
 import json
 
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
+from .models import Train
+
+
+# 🔹 SIGNUP VIEW
 @csrf_exempt
 def signup(request):
 
@@ -27,136 +29,86 @@ def signup(request):
     email = data.get("email")
     password = data.get("password")
 
-    # 🔹 Field validations
     if not username or not email or not password:
-        return JsonResponse(
-            {"message": "All fields are required"},
-            status=400
-        )
+        return JsonResponse({"message": "All fields are required"}, status=400)
 
-    # 🔹 Username length check
     if len(username) < 3:
-        return JsonResponse(
-            {"message": "Username must be at least 3 characters"},
-            status=400
-        )
+        return JsonResponse({"message": "Username must be at least 3 characters"}, status=400)
 
-    # 🔹 Password validation
     if len(password) < 6:
-        return JsonResponse(
-            {"message": "Password must be at least 6 characters"},
-            status=400
-        )
+        return JsonResponse({"message": "Password must be at least 6 characters"}, status=400)
 
-    # 🔹 Email format validation
     try:
         validate_email(email)
     except ValidationError:
-        return JsonResponse(
-            {"message": "Invalid email format"},
-            status=400
-        )
+        return JsonResponse({"message": "Invalid email format"}, status=400)
 
-    # 🔹 Duplicate username check
     if User.objects.filter(username=username).exists():
-        return JsonResponse(
-            {"message": "Username already exists"},
-            status=400
-        )
+        return JsonResponse({"message": "Username already exists"}, status=400)
 
-    # 🔹 Duplicate email check
     if User.objects.filter(email=email).exists():
-        return JsonResponse(
-            {"message": "Email already registered"},
-            status=400
-        )
+        return JsonResponse({"message": "Email already registered"}, status=400)
 
-    # 🔹 Create user
-    User.objects.create_user(
-        username=username,
-        email=email,
-        password=password
-    )
+    User.objects.create_user(username=username, email=email, password=password)
 
-    return JsonResponse(
-        {"message": "Signup successful"},
-        status=201
-    )
+    return JsonResponse({"message": "Signup successful"}, status=201)
 
-from django.contrib.auth import authenticate, login
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-import json
 
+# 🔹 JWT LOGIN VIEW
 @csrf_exempt
-def user_login(request):
+def jwt_login(request):
 
     if request.method != "POST":
-        return JsonResponse(
-            {"message": "Invalid request method"},
-            status=405
-        )
+        return JsonResponse({"message": "Invalid request method"}, status=405)
 
-    # 🔹 Check valid JSON
     try:
         data = json.loads(request.body)
     except:
-        return JsonResponse(
-            {"message": "Invalid JSON data"},
-            status=400
-        )
+        return JsonResponse({"message": "Invalid JSON data"}, status=400)
 
     username = data.get("username")
     password = data.get("password")
 
-    # 🔹 Empty field validation
     if not username or not password:
-        return JsonResponse(
-            {"message": "Username and password are required"},
-            status=400
-        )
+        return JsonResponse({"message": "Username and password required"}, status=400)
 
-    # 🔹 Authenticate user
-    user = authenticate(
-        request,
-        username=username,
-        password=password
-    )
+    user = authenticate(username=username, password=password)
 
     if user is None:
-        return JsonResponse(
-            {"message": "Invalid username or password"},
-            status=401
-        )
+        return JsonResponse({"message": "Invalid credentials"}, status=401)
 
-    # 🔹 Check if user is active
     if not user.is_active:
-        return JsonResponse(
-            {"message": "Account is disabled"},
-            status=403
-        )
+        return JsonResponse({"message": "Account disabled"}, status=403)
 
-    # 🔹 Create session
-    login(request, user)
+    # 🔥 Generate JWT Tokens
+    refresh = RefreshToken.for_user(user)
 
-    return JsonResponse(
-        {
-            "message": "Login successful",
-            "username": user.username,
-            "email": user.email
-        },
-        status=200
-    )
+    return JsonResponse({
+        "message": "Login successful",
+        "access": str(refresh.access_token),   # ✅ FIXED KEY
+        "refresh": str(refresh),               # ✅ FIXED KEY
+        "username": user.username,
+        "email": user.email
+    }, status=200)
 
 
-from django.http import JsonResponse
+# 🔹 JWT PROFILE (USE THIS ONLY)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def jwt_profile(request):
 
-from django.http import JsonResponse
-from django.http import JsonResponse
+    user = request.user
 
+    return JsonResponse({
+        "username": user.username,
+        "email": user.email
+    })
+
+
+# 🔹 PROFILE (MODIFIED TO USE JWT AUTH)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def profile(request):
-    if not request.user.is_authenticated:
-        return JsonResponse({"message": "Not logged in"}, status=401)
 
     user = request.user
 
@@ -164,16 +116,19 @@ def profile(request):
         "username": user.username,
         "email": user.email,
     })
-from django.contrib.auth import logout
 
+
+# 🔹 LOGOUT
 def user_logout(request):
     logout(request)
     return JsonResponse({"message": "Logged out"})
 
-from .models import Train
-from django.http import JsonResponse
 
+# 🔹 SEARCH TRAINS (PROTECTED)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def search_trains(request):
+
     source = request.GET.get("source")
     destination = request.GET.get("destination")
 

@@ -9,45 +9,58 @@ const Profile = () => {
   const [source, setSource] = useState("");
   const [destination, setDestination] = useState("");
   const [trains, setTrains] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
 
+  // 🔹 Fetch profile
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await api.get("profile/");
         setUser(res.data);
-      } catch {
+      } catch (err) {
+        console.log(err);
         navigate("/login");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchProfile();
-  }, []);
+  }, [navigate]);
 
+  // 🔹 Train search
   const handleSearch = async () => {
+
+    if (!source || !destination) {
+      alert("Please enter source and destination");
+      return;
+    }
+
     try {
       const res = await api.get(
         `search-trains/?source=${source}&destination=${destination}`
       );
       setTrains(res.data);
-    } catch {
+    } catch (err) {
+      console.log(err);
       alert("Search failed");
     }
   };
 
+  if (loading) return <h2 style={{ textAlign: "center" }}>Loading...</h2>;
+
   return (
-    
     <div style={styles.page}>
       <div style={styles.container}>
         <div style={styles.card}>
-   
 
+          {/* <Navbar /> */}
 
-          {user ? (
+          {user && (
             <>
-             {/* <Navbar/> */}
               <h2>Welcome, {user.username} 👋</h2>
-              <h2>Here, This is for u Isrtc Booking:</h2>
               <p><b>Email:</b> {user.email}</p>
 
               <hr style={{ margin: "20px 0" }} />
@@ -55,18 +68,22 @@ const Profile = () => {
               <h3>Search Trains 🚆</h3>
 
               <input
+                style={styles.input}
                 placeholder="From"
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
               />
 
               <input
+                style={styles.input}
                 placeholder="To"
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
               />
 
-              <button onClick={handleSearch}>Search</button>
+              <button style={styles.button} onClick={handleSearch}>
+                Search
+              </button>
 
               <div style={{ marginTop: "20px" }}>
                 {trains.length > 0 ? (
@@ -83,8 +100,6 @@ const Profile = () => {
                 )}
               </div>
             </>
-          ) : (
-            <p>Loading...</p>
           )}
 
         </div>
@@ -107,6 +122,22 @@ const styles = {
     width: "450px",
     borderRadius: "10px",
     textAlign: "center"
+  },
+  input: {
+    width: "100%",
+    padding: "10px",
+    margin: "8px 0",
+    borderRadius: "6px",
+    border: "1px solid #ddd"
+  },
+  button: {
+    padding: "10px",
+    width: "100%",
+    background: "#4e73df",
+    color: "white",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer"
   },
   resultCard: {
     background: "#f8f9fc",
